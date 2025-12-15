@@ -5,9 +5,9 @@ import TelegramBot from 'node-telegram-bot-api';
 const app = express();
 app.use(express.json());
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+const bot = new TelegramBot(process.env.8540305777:AAEesA51C2ItFEIu4fNM7Rmv48Gub6PRNUY);
 
-app.post(`/webhook/${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
+app.post(`/webhook/${process.env.8540305777:AAEesA51C2ItFEIu4fNM7Rmv48Gub6PRNUY}`, (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
 });
