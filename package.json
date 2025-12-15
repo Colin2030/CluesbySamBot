@@ -3,21 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Colin2030/CluesbySamBot.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Colin2030/CluesbySamBot/issues"
-  },
-  "homepage": "https://github.com/Colin2030/CluesbySamBot#readme",
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
