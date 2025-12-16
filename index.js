@@ -5,6 +5,11 @@ import { scoreCluesBySam } from "./scoreCluesBySam.js";
 import { parseCluesBySamSubmission } from "./utils/parseCluesBySamSubmission.js";
 import { saveCluesSubmission } from "./saveCluesSubmission.js";
 import { buildCluesTodayMessage } from "./cluesToday.js";
+import { buildCluesWeekMessage } from "./cluesWeek.js";
+import { buildCluesMonthMessage } from "./cluesMonth.js";
+import { registerCronJobs } from "./cronJobs.js";
+
+
 
 
 
@@ -12,6 +17,8 @@ const app = express();
 app.use(express.json());
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+//...
+registerCronJobs(bot);
 
 app.post("/webhook", (req, res) => {
   bot.processUpdate(req.body);
@@ -24,9 +31,19 @@ bot.on("message", async (msg) => {
 	// Commands (group only)
 if (String(msg.chat.id) === String(process.env.GROUP_CHAT_ID)) {
   const text = (msg.text ?? "").trim();
+  
+ if (/^\/clues_week(@\w+)?$/i.test(text)) {
+  await bot.sendMessage(msg.chat.id, await buildCluesWeekMessage());
+  return;
+}
+
+if (/^\/clues_month(@\w+)?$/i.test(text)) {
+  await bot.sendMessage(msg.chat.id, await buildCluesMonthMessage());
+  return;
+}
 
   // Support "/clues_today" and "/clues_today@YourBot"
-  if (/^\/clues_today(@\w+)?$/i.test(text)) {
+ if (/^\/clues_today(@\w+)?$/i.test(text)) {
     const message = await buildCluesTodayMessage();
     await bot.sendMessage(msg.chat.id, message);
     return;
