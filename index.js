@@ -3,6 +3,7 @@ import express from 'express';
 import TelegramBot from 'node-telegram-bot-api';
 import { scoreCluesBySam } from "./scoreCluesBySam.js";
 import { parseCluesBySamSubmission } from "./utils/parseCluesBySamSubmission.js";
+import { saveCluesSubmission } from "./saveCluesSubmission.js";
 
 
 const app = express();
@@ -16,13 +17,23 @@ app.post("/webhook", (req, res) => {
 });
 
 
-bot.on("message", (msg) => {
+bot.on("message", async (msg) => {
   if (String(msg.chat.id) !== String(process.env.GROUP_CHAT_ID)) return;
 
   const parsed = parseCluesBySamSubmission(msg.text ?? "");
   if (!parsed) return;
 
   const scored = scoreCluesBySam(parsed);
+  
+  const result = await saveCluesSubmission(parsed, scored, msg);
+
+if (!result.saved) {
+  bot.sendMessage(msg.chat.id, `⛔ Already logged for ${parsed.puzzleDateISO} — first submission stands.`);
+  return;
+}
+
+bot.sendMessage(msg.chat.id, `✅ Logged: ${parsed.puzzleDateISO} — Score ${scored.total}`);
+
 
   const timeText =
     scored.effectiveTimeSeconds != null
