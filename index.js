@@ -116,9 +116,14 @@ if (/^\/clues_streak(@\w+)?$/i.test(text)) {
   const result = await saveCluesSubmission(parsed, scored, msg);
 
 if (!result.saved) {
-  bot.sendMessage(msg.chat.id, `⛔ Already logged for ${parsed.puzzleDateISO} — first submission stands.`);
+  await bot.sendMessage(
+    msg.chat.id,
+    `🚬 I’ve heard this story already — ${parsed.puzzleDateISO}.
+First confession stands. Changing it now would just make things worse.`
+  );
   return;
 }
+
 
 // ---- Polished submission response with GPT commentary ----
 
