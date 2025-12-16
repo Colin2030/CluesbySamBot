@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
 import TelegramBot from 'node-telegram-bot-api';
+import { scoreCluesBySam } from "./scoreCluesBySam.js";
+import { parseCluesBySamSubmission } from "./utils/parseCluesBySamSubmission.js";
+
 
 const app = express();
 app.use(express.json());
@@ -12,7 +15,6 @@ app.post("/webhook", (req, res) => {
   res.sendStatus(200);
 });
 
-import { parseCluesBySamSubmission } from "./utils/parseCluesBySamSubmission.js";
 
 bot.on("message", (msg) => {
   if (String(msg.chat.id) !== String(process.env.GROUP_CHAT_ID)) return;
@@ -20,11 +22,23 @@ bot.on("message", (msg) => {
   const parsed = parseCluesBySamSubmission(msg.text ?? "");
   if (!parsed) return;
 
+  const scored = scoreCluesBySam(parsed);
+
+  const timeText =
+    scored.effectiveTimeSeconds != null
+      ? `${Math.floor(scored.effectiveTimeSeconds / 60)}:${String(scored.effectiveTimeSeconds % 60).padStart(2, "0")}${scored.breakdown.usedBandTime ? " (est.)" : ""}`
+      : "n/a";
+
+  const noteText = scored.notes.length ? `\nNotes: ${scored.notes.join(" ")}` : "";
+
   bot.sendMessage(
     msg.chat.id,
-    `✅ Parsed ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
-🟩 ${parsed.tiles.green}  🟡 ${parsed.tiles.clue}  🟨 ${parsed.tiles.retry}
-Time: ${parsed.timeSeconds ?? (parsed.timeBandMinutes ? `<${parsed.timeBandMinutes}m` : "unknown")}`
+    `🏁 Clues by Sam — ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
+Score: ${scored.total}  (base ${scored.base} × ${scored.difficultyMultiplier.toFixed(2)})
+
+Quality: ${scored.qualityScore}/100  |  Speed: ${scored.speedScore ?? "n/a"}/100
+🟩 ${scored.breakdown.greens}  🟡 ${scored.breakdown.clues}  🟨 ${scored.breakdown.retries}
+Time: ${timeText}${noteText}`
   );
 });
 
