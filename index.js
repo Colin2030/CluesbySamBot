@@ -12,7 +12,7 @@ app.post("/webhook", (req, res) => {
   res.sendStatus(200);
 });
 
-import { parseCluesBySamSubmission } from "./src/utils/parseCluesBySamSubmission.js";
+import { parseCluesBySamSubmission } from "./utils/parseCluesBySamSubmission.js";
 
 bot.on("message", (msg) => {
   if (String(msg.chat.id) !== String(process.env.GROUP_CHAT_ID)) return;
