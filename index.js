@@ -4,6 +4,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import { scoreCluesBySam } from "./scoreCluesBySam.js";
 import { parseCluesBySamSubmission } from "./utils/parseCluesBySamSubmission.js";
 import { saveCluesSubmission } from "./saveCluesSubmission.js";
+import { buildCluesTodayMessage } from "./cluesToday.js";
+
 
 
 const app = express();
@@ -18,6 +20,19 @@ app.post("/webhook", (req, res) => {
 
 
 bot.on("message", async (msg) => {
+	
+	// Commands (group only)
+if (String(msg.chat.id) === String(process.env.GROUP_CHAT_ID)) {
+  const text = (msg.text ?? "").trim();
+
+  // Support "/clues_today" and "/clues_today@YourBot"
+  if (/^\/clues_today(@\w+)?$/i.test(text)) {
+    const message = await buildCluesTodayMessage();
+    await bot.sendMessage(msg.chat.id, message);
+    return;
+  }
+}
+
   if (String(msg.chat.id) !== String(process.env.GROUP_CHAT_ID)) return;
 
   const parsed = parseCluesBySamSubmission(msg.text ?? "");
