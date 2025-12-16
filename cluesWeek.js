@@ -94,6 +94,11 @@ export async function buildCluesWeekMessage() {
   const sorted = [...totals.values()]
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
+	
+const gap =
+  sorted.length > 1
+    ? Math.round(sorted[0].score - sorted[1].score)
+    : null;
 
   const lines = [];
   lines.push(
@@ -103,8 +108,11 @@ export async function buildCluesWeekMessage() {
   );
 
   sorted.forEach((e, i) => {
-    lines.push(`${medal(i)} ${e.name} — ${Math.round(e.score)}`);
-  });
+  let flair = "";
+  if (i === 0) flair = " 👑";
+  lines.push(`${medal(i)} ${e.name} — ${Math.round(e.score)}${flair}`);
+});
+
 
   return lines.join("\n");
 }

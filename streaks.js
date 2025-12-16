@@ -2,6 +2,7 @@
 import { getSheetsClient } from "./sheetsClient.js";
 
 function londonISO(date = new Date()) {
+  // YYYY-MM-DD in Europe/London
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/London",
     year: "numeric",
@@ -10,7 +11,7 @@ function londonISO(date = new Date()) {
   }).formatToParts(date);
 
   const get = (t) => parts.find((p) => p.type === t)?.value;
-  return `${get("year")}-${get("month")}-${get("day")}`; // YYYY-MM-DD
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 function addDaysISO(iso, deltaDays) {
@@ -20,8 +21,19 @@ function addDaysISO(iso, deltaDays) {
   return dt.toISOString().slice(0, 10);
 }
 
-function uniqueSorted(dates) {
-  return [...new Set(dates)].sort(); // YYYY-MM-DD sorts lexicographically OK
+function uniqueSortedISODates(dates) {
+  // YYYY-MM-DD sorts lexicographically
+  return [...new Set(dates)].sort();
+}
+
+function streakFlair(days) {
+  if (days >= 14) return "👑🔥🔥🔥";
+  if (days >= 10) return "🚀🔥🔥🔥";
+  if (days >= 7) return "💥🔥🔥🔥";
+  if (days >= 5) return "🔥🔥🔥";
+  if (days >= 3) return "🔥🔥";
+  if (days >= 1) return "🔥";
+  return "";
 }
 
 async function readAllRows() {
@@ -52,7 +64,6 @@ function headerIndex(headers, name) {
 }
 
 function computeBestStreak(datesSorted) {
-  // datesSorted: array of unique YYYY-MM-DD strings
   if (datesSorted.length === 0) return 0;
 
   let best = 1;
@@ -61,6 +72,7 @@ function computeBestStreak(datesSorted) {
   for (let i = 1; i < datesSorted.length; i++) {
     const prev = datesSorted[i - 1];
     const expected = addDaysISO(prev, 1);
+
     if (datesSorted[i] === expected) {
       run += 1;
       if (run > best) best = run;
@@ -68,31 +80,32 @@ function computeBestStreak(datesSorted) {
       run = 1;
     }
   }
+
   return best;
 }
 
 function computeCurrentStreak(datesSorted, todayISO) {
-  // current streak counts consecutive days ending at:
-  // - today if played today, else
-  // - yesterday if played yesterday, else 0
-  if (datesSorted.length === 0) return { current: 0, lastPlayed: null, playedToday: false };
+  if (datesSorted.length === 0) {
+    return { current: 0, lastPlayed: null, playedToday: false };
+  }
 
   const lastPlayed = datesSorted[datesSorted.length - 1];
   const yesterday = addDaysISO(todayISO, -1);
 
   const playedToday = lastPlayed === todayISO;
 
+  // Anchor is the most recent day that still allows a "current" streak:
+  // - today (if played)
+  // - yesterday (if not played today but did play yesterday)
   let anchor = null;
   if (lastPlayed === todayISO) anchor = todayISO;
   else if (lastPlayed === yesterday) anchor = yesterday;
   else return { current: 0, lastPlayed, playedToday: false };
 
-  // Walk backwards from anchor and count consecutive days
+  const set = new Set(datesSorted);
+
   let current = 1;
   let cursor = anchor;
-
-  // Use a Set for O(1) membership
-  const set = new Set(datesSorted);
 
   while (true) {
     const prev = addDaysISO(cursor, -1);
@@ -107,7 +120,7 @@ function computeCurrentStreak(datesSorted, todayISO) {
   return { current, lastPlayed, playedToday };
 }
 
-export async function buildCluesStreakMessage(telegramUserId, fallbackName = "You") {
+export async function buildCluesStreakMessage(telegramUserId, displayName = "You") {
   const { headers, data } = await readAllRows();
   if (headers.length === 0) return "No scores logged yet.";
 
@@ -122,31 +135,34 @@ export async function buildCluesStreakMessage(telegramUserId, fallbackName = "Yo
   }
 
   const today = londonISO();
-  const datesSorted = uniqueSorted(dates);
+  const datesSorted = uniqueSortedISODates(dates);
 
   const best = computeBestStreak(datesSorted);
   const { current, lastPlayed, playedToday } = computeCurrentStreak(datesSorted, today);
 
-  const title = `🔥 Clues by Sam — Streaks`;
-  const nameLine = `👤 ${fallbackName}`;
-  const playedLine = playedToday ? `✅ Played today (${today})` : `⏳ Not played yet today (${today})`;
-  const lastLine = lastPlayed ? `📅 Last played: ${lastPlayed}` : `📅 Last played: never`;
+  const playedLine = playedToday
+    ? `✅ Played today (${today})`
+    : `⏳ Not played yet today (${today})`;
+
+  const lastLine = lastPlayed
+    ? `📅 Last played: ${lastPlayed}`
+    : `📅 Last played: never`;
 
   const currentLine = current > 0
-    ? `🔥 Current streak: *${current}* day${current === 1 ? "" : "s"}`
-    : `🔥 Current streak: *0* (start one today!)`;
+    ? `${streakFlair(current)} Current streak: *${current}* day${current === 1 ? "" : "s"}`
+    : `🧯 Current streak: *0* (start one today!)`;
 
   const bestLine = best > 0
-    ? `🏅 Best streak: *${best}* day${best === 1 ? "" : "s"}`
+    ? `🏅 Best streak: *${best}* day${best === 1 ? "" : "s"} ${streakFlair(best)}`
     : `🏅 Best streak: *0*`;
 
   return [
-    title,
-    "",
-    nameLine,
+    `🔥 Clues by Sam — Streaks`,
+    ``,
+    `👤 ${displayName}`,
     playedLine,
     lastLine,
-    "",
+    ``,
     currentLine,
     bestLine,
   ].join("\n");

@@ -25,6 +25,37 @@ app.post("/webhook", (req, res) => {
   res.sendStatus(200);
 });
 
+function escapeMarkdown(s = "") {
+  // Telegram Markdown (not V2) minimal escaping
+  return String(s).replace(/[_*`\[]/g, "\\$&");
+}
+
+function buildWelcomeMessage(firstName) {
+  const name = escapeMarkdown(firstName || "pal");
+  return (
+`*Well now… look what the cat dragged in.*
+
+Welcome to the joint, *${name}*.
+
+This is where words go to confess and guesses get put under the lamp. Every day there’s a new case — and nobody gets out clean.
+
+Here’s how it works, kid:
+• You crack the daily puzzle
+• You post your results — no alibis, no disappearing acts
+• I keep the books, the scores, and the grudges
+
+Do well and you’ll earn a reputation.
+Do badly and… well, we’ve all had nights like that.
+
+Streaks matter. Consistency matters more.
+And the clock? The clock is always watching.
+
+When you’re ready, post today’s result and let’s see what you’re made of.
+
+*Now grab a chair. The city never sleeps — and neither does this puzzle.*`
+  );
+}
+
 
 bot.on("message", async (msg) => {
 	
@@ -52,7 +83,20 @@ if (/^\/clues_streak(@\w+)?$/i.test(text)) {
   await bot.sendMessage(msg.chat.id, message, { disable_web_page_preview: true });
   return;
 }
+  // Welcome new members
+  if (String(msg.chat.id) === String(process.env.GROUP_CHAT_ID) && Array.isArray(msg.new_chat_members)) {
+    for (const member of msg.new_chat_members) {
+      // Skip bots (including ourselves)
+      if (member.is_bot) continue;
 
+      await bot.sendMessage(
+        msg.chat.id,
+        buildWelcomeMessage(member.first_name),
+        { parse_mode: "Markdown", disable_web_page_preview: true }
+      );
+    }
+    return; // don’t also treat the join message as a command/submission
+  }
 
   // Support "/clues_today" and "/clues_today@YourBot"
  if (/^\/clues_today(@\w+)?$/i.test(text)) {
