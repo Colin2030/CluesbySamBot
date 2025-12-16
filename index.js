@@ -8,10 +8,10 @@ import { buildCluesTodayMessage } from "./cluesToday.js";
 import { buildCluesWeekMessage } from "./cluesWeek.js";
 import { buildCluesMonthMessage } from "./cluesMonth.js";
 import { registerCronJobs } from "./cronJobs.js";
-
-
-
-
+import { buildCluesStreakMessage } from "./streaks.js";
+import { londonISO } from "./timeLondon.js";
+import { buildDailyLeaderboard } from "./leaderboards.js";
+import { generateCluesComment } from "./aiCommentary.js";
 
 const app = express();
 app.use(express.json());
@@ -42,6 +42,18 @@ if (/^\/clues_month(@\w+)?$/i.test(text)) {
   return;
 }
 
+if (/^\/clues_streak(@\w+)?$/i.test(text)) {
+  const display =
+    (msg.from?.username && `@${msg.from.username}`) ||
+    [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
+    "You";
+
+  const message = await buildCluesStreakMessage(msg.from.id, display);
+  await bot.sendMessage(msg.chat.id, message, { disable_web_page_preview: true });
+  return;
+}
+
+
   // Support "/clues_today" and "/clues_today@YourBot"
  if (/^\/clues_today(@\w+)?$/i.test(text)) {
     const message = await buildCluesTodayMessage();
@@ -64,25 +76,65 @@ if (!result.saved) {
   return;
 }
 
-bot.sendMessage(msg.chat.id, `✅ Logged: ${parsed.puzzleDateISO} — Score ${scored.total}`);
+// ---- Polished submission response with GPT commentary ----
 
+const todayISO = londonISO();
 
-  const timeText =
-    scored.effectiveTimeSeconds != null
-      ? `${Math.floor(scored.effectiveTimeSeconds / 60)}:${String(scored.effectiveTimeSeconds % 60).padStart(2, "0")}${scored.breakdown.usedBandTime ? " (est.)" : ""}`
+// Build today's leaderboard to determine rank
+const lb = await buildDailyLeaderboard(todayISO);
+let rank = null;
+
+if (lb?.entries?.length) {
+  const idx = lb.entries.findIndex(
+    (e) => String(e.userId) === String(msg.from.id)
+  );
+  if (idx >= 0) rank = idx + 1;
+}
+
+const rankText = rank ? `#${rank}/${lb.entries.length}` : "unranked";
+
+const playerName =
+  (msg.from?.username && `@${msg.from.username}`) ||
+  [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
+  "Someone mysterious";
+
+const timeText =
+  scored.effectiveTimeSeconds != null
+    ? `${Math.floor(scored.effectiveTimeSeconds / 60)}:${String(
+        scored.effectiveTimeSeconds % 60
+      ).padStart(2, "0")}${scored.breakdown.usedBandTime ? " (est.)" : ""}`
+    : parsed.timeBandMinutes
+      ? `<${parsed.timeBandMinutes}m`
       : "n/a";
 
-  const noteText = scored.notes.length ? `\nNotes: ${scored.notes.join(" ")}` : "";
+// Normalise score to 0–1 for tone selection
+const scorePct = Math.max(0, Math.min(1, scored.base / 200));
 
-  bot.sendMessage(
-    msg.chat.id,
-    `🏁 Clues by Sam — ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
-Score: ${scored.total}  (base ${scored.base} × ${scored.difficultyMultiplier.toFixed(2)})
+const comment = await generateCluesComment({
+  playerName,
+  scorePct,
+  difficulty: parsed.difficulty,
+  greens: scored.breakdown.greens,
+  clues: scored.breakdown.clues,
+  retries: scored.breakdown.retries,
+  timeText,
+  rankText,
+});
 
-Quality: ${scored.qualityScore}/100  |  Speed: ${scored.speedScore ?? "n/a"}/100
-🟩 ${scored.breakdown.greens}  🟡 ${scored.breakdown.clues}  🟨 ${scored.breakdown.retries}
-Time: ${timeText}${noteText}`
-  );
+await bot.sendMessage(
+  msg.chat.id,
+  `🧩 *Clues by Sam* — ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
+
+🏁 *Score:* ${scored.total}  •  *Today:* ${rankText}
+🟩 ${scored.breakdown.greens}  🟡 ${scored.breakdown.clues}  🟨 ${scored.breakdown.retries}   ⏱️ ${timeText}
+
+_${comment}_`,
+  {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  }
+);
+
 });
 
 const port = process.env.PORT || 3000;
