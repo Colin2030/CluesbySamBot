@@ -44,6 +44,8 @@ Here's how it works, kid:
 • You post your results — no alibis, no disappearing acts
 • I keep the books, the scores, and the grudges
 
+Just type /help if need me. I'm always here, I never sleep.
+
 Do well and you'll earn a reputation.
 Do badly and… well, we've all had nights like that.
 
@@ -83,6 +85,88 @@ if (/^\/clues_streak(@\w+)?$/i.test(text)) {
   await bot.sendMessage(msg.chat.id, message, { disable_web_page_preview: true });
   return;
 }
+
+if (/^\/ping(@\w+)?$/i.test(text)) {
+  await bot.sendMessage(
+    msg.chat.id,
+    `🚬 *Still here, pal.*\n\nThe lights are on and the coffee's cold — just how I like it.`,
+    { parse_mode: "Markdown" }
+  );
+  return;
+}
+
+if (/^\/help(@\w+)?$/i.test(text)) {
+  const helpText = `🕵️ *Clues by Sam Bot — Commands*
+
+*Daily Puzzle:*
+Just post your Clues by Sam result and I'll log it automatically.
+
+*Commands:*
+/clues_today — Today's leaderboard
+/clues_week — This week's leaderboard
+/clues_month — This month's leaderboard
+/clues_streak — Your current streak
+/scoring — How the scoring works
+/help — Show this message
+/ping — Check if the bot is alive
+
+*How it works:*
+• Solve the daily puzzle at cluesbysam.com
+• Post your result in this chat
+• I'll score it and update the leaderboards
+• Build streaks by playing consecutive days
+• Compete for daily, weekly, and monthly glory
+
+*The clock never stops. Neither should you.*`;
+
+  await bot.sendMessage(msg.chat.id, helpText, { 
+    parse_mode: "Markdown",
+    disable_web_page_preview: true 
+  });
+  return;
+}
+
+if (/^\/scoring(@\w+)?$/i.test(text)) {
+  const scoringText = `🎯 *Clues by Sam — Scoring System*
+
+Your score is calculated from your puzzle performance:
+
+*Base Points (max 200):*
+• 🟩 Green tiles: +10 each
+• 🟡 Clues used: -5 each
+• 🟨 Retries: -10 each
+
+*Time Bonus (max 50):*
+• Under 2 min: +50
+• Under 3 min: +40
+• Under 4 min: +30
+• Under 5 min: +20
+• Under 7 min: +10
+• 7+ min: +0
+
+*Difficulty Multiplier:*
+• Easy: ×0.8
+• Medium: ×1.0
+• Hard: ×1.2
+• Expert: ×1.5
+
+*Final Score = (Base + Time Bonus) × Difficulty*
+
+*Pro tips:*
+• Fewer clues = higher score
+• Speed matters (but accuracy more)
+• Harder puzzles = bigger multipliers
+• No retries = maximum points
+
+*Now get out there and show me what you've got.*`;
+
+  await bot.sendMessage(msg.chat.id, scoringText, { 
+    parse_mode: "Markdown",
+    disable_web_page_preview: true 
+  });
+  return;
+}
+
   // Welcome new members
   if (String(msg.chat.id) === String(process.env.GROUP_CHAT_ID) && Array.isArray(msg.new_chat_members)) {
     for (const member of msg.new_chat_members) {
