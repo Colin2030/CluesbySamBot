@@ -17,6 +17,16 @@ const app = express();
 app.use(express.json());
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+
+// Set webhook on startup
+const WEBHOOK_URL = process.env.WEBHOOK_URL; // e.g., "https://yourdomain.com/webhook"
+if (WEBHOOK_URL) {
+  bot.setWebHook(WEBHOOK_URL)
+    .then(() => console.log(`✅ Webhook set to ${WEBHOOK_URL}`))
+    .catch((err) => console.error("❌ Failed to set webhook:", err));
+} else {
+  console.warn("⚠️ No WEBHOOK_URL set; bot will not receive updates.");
+}
 //...
 registerCronJobs(bot);
 
