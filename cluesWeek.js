@@ -77,8 +77,8 @@ export async function buildCluesWeekMessage() {
     if (!Number.isFinite(score)) continue;
 
     const name =
-      row[iUserName] ||
       row[iDisplay] ||
+      row[iUserName] ||
       `User ${userId}`;
 
     totals.set(userId, {

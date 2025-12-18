@@ -37,20 +37,20 @@ function buildWelcomeMessage(firstName) {
 
 Welcome to the joint, *${name}*.
 
-This is where our logic is stressed and guesses get put under the lamp. Every day there’s a new case — and nobody gets out clean.
+This is where our logic is stressed and guesses get put under the lamp. Every day there's a new case — and nobody gets out clean.
 
-Here’s how it works, kid:
+Here's how it works, kid:
 • You crack the daily puzzle
 • You post your results — no alibis, no disappearing acts
 • I keep the books, the scores, and the grudges
 
-Do well and you’ll earn a reputation.
-Do badly and… well, we’ve all had nights like that.
+Do well and you'll earn a reputation.
+Do badly and… well, we've all had nights like that.
 
 Streaks matter. Consistency matters more.
 And the clock? The clock is always watching.
 
-When you’re ready, post today’s result and let’s see what you’re made of.
+When you're ready, post today's result and let's see what you're made of.
 
 *Now grab a chair. The city never sleeps — and neither does this puzzle.*`
   );
@@ -75,8 +75,8 @@ if (/^\/clues_month(@\w+)?$/i.test(text)) {
 
 if (/^\/clues_streak(@\w+)?$/i.test(text)) {
   const display =
-    (msg.from?.username && `@${msg.from.username}`) ||
     [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
+    (msg.from?.username && `@${msg.from.username}`) ||
     "You";
 
   const message = await buildCluesStreakMessage(msg.from.id, display);
@@ -95,7 +95,7 @@ if (/^\/clues_streak(@\w+)?$/i.test(text)) {
         { parse_mode: "Markdown", disable_web_page_preview: true }
       );
     }
-    return; // don’t also treat the join message as a command/submission
+    return; // don't also treat the join message as a command/submission
   }
 
   // Support "/clues_today" and "/clues_today@YourBot"
@@ -118,7 +118,7 @@ if (/^\/clues_streak(@\w+)?$/i.test(text)) {
 if (!result.saved) {
   await bot.sendMessage(
     msg.chat.id,
-    `🚬 I’ve heard this story already — ${parsed.puzzleDateISO}.
+    `🚬 I've heard this story already — ${parsed.puzzleDateISO}.
 First confession stands. Changing it now would just make things worse.`
   );
   return;
@@ -143,8 +143,8 @@ if (lb?.entries?.length) {
 const rankText = rank ? `#${rank}/${lb.entries.length}` : "unranked";
 
 const playerName =
-  (msg.from?.username && `@${msg.from.username}`) ||
   [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
+  (msg.from?.username && `@${msg.from.username}`) ||
   "Someone mysterious";
 
 const timeText =

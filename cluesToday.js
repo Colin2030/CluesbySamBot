@@ -69,7 +69,7 @@ export async function buildCluesTodayMessage() {
 
     const displayName = String(row[iDisplay] || "").trim();
     const username = String(row[iUserName] || "").trim();
-    const userLabel = username || displayName || `User ${row[iUser]}`;
+    const userLabel = displayName || username || `User ${row[iUser]}`;
 
     const difficulty = iDiff >= 0 ? String(row[iDiff] || "").trim() : "";
 
