@@ -125,7 +125,7 @@ export async function buildDailyLeaderboard(isoDate) {
     if (score == null) continue;
 
     const userId = row[iUser];
-    const name = (iUserName >= 0 && row[iUserName]) || (iDisplay >= 0 && row[iDisplay]) || `User ${userId}`;
+    const name = (iDisplay >= 0 && row[iDisplay]) || (iUserName >= 0 && row[iUserName]) || `User ${userId}`;
     const difficulty = iDiff >= 0 ? String(row[iDiff] || "").trim() : "";
 
     entries.push({ userId, name, score, difficulty });
@@ -166,7 +166,7 @@ export async function buildRangeLeaderboard(startISO, endISO, topN = 10) {
     if (score == null) continue;
 
     const userId = String(row[iUser] || "").trim();
-    const name = (iUserName >= 0 && row[iUserName]) || (iDisplay >= 0 && row[iDisplay]) || `User ${userId}`;
+    const name = (iDisplay >= 0 && row[iDisplay]) || (iUserName >= 0 && row[iUserName]) || `User ${userId}`;
 
     const prev = totals.get(userId);
     totals.set(userId, { userId, name, score: (prev?.score ?? 0) + score });
