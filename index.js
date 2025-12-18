@@ -60,43 +60,51 @@ When you're ready, post today's result and let's see what you're made of.
 
 
 bot.on("message", async (msg) => {
-	
-	// Commands (group only)
-if (String(msg.chat.id) === String(process.env.GROUP_CHAT_ID)) {
+  const chatId = String(msg.chat.id);
+  const groupId = String(process.env.GROUP_CHAT_ID || "");
+
+  // We only care about this one group
+  const isGroup = chatId === groupId;
+
   const text = (msg.text ?? "").trim();
-  
- if (/^\/clues_week(@\w+)?$/i.test(text)) {
-  await bot.sendMessage(msg.chat.id, await buildCluesWeekMessage());
-  return;
-}
 
-if (/^\/clues_month(@\w+)?$/i.test(text)) {
-  await bot.sendMessage(msg.chat.id, await buildCluesMonthMessage());
-  return;
-}
+  // ---------------------------
+  // Commands (group only)
+  // ---------------------------
+  if (isGroup && text) {
 
-if (/^\/clues_streak(@\w+)?$/i.test(text)) {
-  const display =
-    [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
-    (msg.from?.username && `@${msg.from.username}`) ||
-    "You";
+    if (/^\/clues_week(@\w+)?$/i.test(text)) {
+      await bot.sendMessage(chatId, await buildCluesWeekMessage());
+      return;
+    }
 
-  const message = await buildCluesStreakMessage(msg.from.id, display);
-  await bot.sendMessage(msg.chat.id, message, { disable_web_page_preview: true });
-  return;
-}
+    if (/^\/clues_month(@\w+)?$/i.test(text)) {
+      await bot.sendMessage(chatId, await buildCluesMonthMessage());
+      return;
+    }
 
-if (/^\/ping(@\w+)?$/i.test(text)) {
-  await bot.sendMessage(
-    msg.chat.id,
-    `🚬 *Still here, pal.*\n\nThe lights are on and the coffee's cold — just how I like it.`,
-    { parse_mode: "Markdown" }
-  );
-  return;
-}
+    if (/^\/clues_streak(@\w+)?$/i.test(text)) {
+      const display =
+        [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
+        (msg.from?.username && `@${msg.from.username}`) ||
+        "You";
 
-if (/^\/help(@\w+)?$/i.test(text)) {
-  const helpText = `🕵️ *Clues by Sam Bot — Commands*
+      const message = await buildCluesStreakMessage(msg.from.id, display);
+      await bot.sendMessage(chatId, message, { disable_web_page_preview: true });
+      return;
+    }
+
+    if (/^\/ping(@\w+)?$/i.test(text)) {
+      await bot.sendMessage(
+        chatId,
+        `🚬 *Still here, pal.*\n\nThe lights are on and the coffee's cold — just how I like it.`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
+    if (/^\/help(@\w+)?$/i.test(text)) {
+      const helpText = `🕵️ *Clues by Sam Bot — Commands*
 
 *Daily Puzzle:*
 Just post your Clues by Sam result and I'll log it automatically.
@@ -119,15 +127,15 @@ Just post your Clues by Sam result and I'll log it automatically.
 
 *The clock never stops. Neither should you.*`;
 
-  await bot.sendMessage(msg.chat.id, helpText, { 
-    parse_mode: "Markdown",
-    disable_web_page_preview: true 
-  });
-  return;
-}
+      await bot.sendMessage(chatId, helpText, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      });
+      return;
+    }
 
-if (/^\/scoring(@\w+)?$/i.test(text)) {
-  const scoringText = `🎯 *Clues by Sam — Scoring System*
+    if (/^\/scoring(@\w+)?$/i.test(text)) {
+      const scoringText = `🎯 *Clues by Sam — Scoring System*
 
 Your score is calculated from your puzzle performance:
 
@@ -160,116 +168,121 @@ Your score is calculated from your puzzle performance:
 
 *Now get out there and show me what you've got.*`;
 
-  await bot.sendMessage(msg.chat.id, scoringText, { 
-    parse_mode: "Markdown",
-    disable_web_page_preview: true 
-  });
-  return;
-}
+      await bot.sendMessage(chatId, scoringText, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      });
+      return;
+    }
 
-  // Welcome new members
-  if (String(msg.chat.id) === String(process.env.GROUP_CHAT_ID) && Array.isArray(msg.new_chat_members)) {
+    // Support "/clues_today" and "/clues_today@YourBot"
+    if (/^\/clues_today(@\w+)?$/i.test(text)) {
+      const message = await buildCluesTodayMessage();
+      await bot.sendMessage(chatId, message);
+      return;
+    }
+  }
+
+  // ---------------------------
+  // Welcome new members (group only)
+  // ---------------------------
+  if (isGroup && Array.isArray(msg.new_chat_members)) {
     for (const member of msg.new_chat_members) {
       // Skip bots (including ourselves)
       if (member.is_bot) continue;
 
       await bot.sendMessage(
-        msg.chat.id,
+        chatId,
         buildWelcomeMessage(member.first_name),
         { parse_mode: "Markdown", disable_web_page_preview: true }
       );
     }
-    return; // don't also treat the join message as a command/submission
-  }
-
-  // Support "/clues_today" and "/clues_today@YourBot"
- if (/^\/clues_today(@\w+)?$/i.test(text)) {
-    const message = await buildCluesTodayMessage();
-    await bot.sendMessage(msg.chat.id, message);
+    // don't also treat the join message as a command/submission
     return;
   }
-}
 
-  if (String(msg.chat.id) !== String(process.env.GROUP_CHAT_ID)) return;
+  // ---------------------------
+  // Ignore everything outside the group
+  // ---------------------------
+  if (!isGroup) return;
 
+  // ---------------------------
+  // Submission parsing (group text messages)
+  // ---------------------------
   const parsed = parseCluesBySamSubmission(msg.text ?? "");
   if (!parsed) return;
 
   const scored = scoreCluesBySam(parsed);
-  
   const result = await saveCluesSubmission(parsed, scored, msg);
 
-if (!result.saved) {
-  await bot.sendMessage(
-    msg.chat.id,
-    `🚬 I've heard this story already — ${parsed.puzzleDateISO}.
+  if (!result.saved) {
+    await bot.sendMessage(
+      chatId,
+      `🚬 I've heard this story already — ${parsed.puzzleDateISO}.
 First confession stands. Changing it now would just make things worse.`
-  );
-  return;
-}
+    );
+    return;
+  }
 
+  // ---- Polished submission response with GPT commentary ----
 
-// ---- Polished submission response with GPT commentary ----
+  const todayISO = londonISO();
 
-const todayISO = londonISO();
+  // Build today's leaderboard to determine rank
+  const lb = await buildDailyLeaderboard(todayISO);
+  let rank = null;
 
-// Build today's leaderboard to determine rank
-const lb = await buildDailyLeaderboard(todayISO);
-let rank = null;
+  if (lb?.entries?.length) {
+    const idx = lb.entries.findIndex(
+      (e) => String(e.userId) === String(msg.from.id)
+    );
+    if (idx >= 0) rank = idx + 1;
+  }
 
-if (lb?.entries?.length) {
-  const idx = lb.entries.findIndex(
-    (e) => String(e.userId) === String(msg.from.id)
-  );
-  if (idx >= 0) rank = idx + 1;
-}
+  const rankText = rank ? `#${rank}/${lb.entries.length}` : "unranked";
 
-const rankText = rank ? `#${rank}/${lb.entries.length}` : "unranked";
+  const playerName =
+    [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
+    (msg.from?.username && `@${msg.from.username}`) ||
+    "Someone mysterious";
 
-const playerName =
-  [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") ||
-  (msg.from?.username && `@${msg.from.username}`) ||
-  "Someone mysterious";
+  const timeText =
+    scored.effectiveTimeSeconds != null
+      ? `${Math.floor(scored.effectiveTimeSeconds / 60)}:${String(
+          scored.effectiveTimeSeconds % 60
+        ).padStart(2, "0")}${scored.breakdown.usedBandTime ? " (est.)" : ""}`
+      : parsed.timeBandMinutes
+        ? `<${parsed.timeBandMinutes}m`
+        : "n/a";
 
-const timeText =
-  scored.effectiveTimeSeconds != null
-    ? `${Math.floor(scored.effectiveTimeSeconds / 60)}:${String(
-        scored.effectiveTimeSeconds % 60
-      ).padStart(2, "0")}${scored.breakdown.usedBandTime ? " (est.)" : ""}`
-    : parsed.timeBandMinutes
-      ? `<${parsed.timeBandMinutes}m`
-      : "n/a";
+  // Normalise score to 0–1 for tone selection
+  const scorePct = Math.max(0, Math.min(1, scored.base / 200));
 
-// Normalise score to 0–1 for tone selection
-const scorePct = Math.max(0, Math.min(1, scored.base / 200));
+  const comment = await generateCluesComment({
+    playerName,
+    scorePct,
+    difficulty: parsed.difficulty,
+    greens: scored.breakdown.greens,
+    clues: scored.breakdown.clues,
+    retries: scored.breakdown.retries,
+    timeText,
+    rankText,
+  });
 
-const comment = await generateCluesComment({
-  playerName,
-  scorePct,
-  difficulty: parsed.difficulty,
-  greens: scored.breakdown.greens,
-  clues: scored.breakdown.clues,
-  retries: scored.breakdown.retries,
-  timeText,
-  rankText,
-});
-
-await bot.sendMessage(
-  msg.chat.id,
-  `🧩 *Clues by Sam* — ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
+  await bot.sendMessage(
+    chatId,
+    `🧩 *Clues by Sam* — ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
 
 🏁 *Score:* ${scored.total}  •  *Today:* ${rankText}
 🟩 ${scored.breakdown.greens}  🟡 ${scored.breakdown.clues}  🟨 ${scored.breakdown.retries}   ⏱️ ${timeText}
 
 _${comment}_`,
-  {
-    parse_mode: "Markdown",
-    disable_web_page_preview: true,
-  }
-);
-
+    {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true,
+    }
+  );
 });
-
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Listening on ${port}`);
