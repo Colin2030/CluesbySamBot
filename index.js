@@ -37,7 +37,7 @@ function buildWelcomeMessage(firstName) {
 
 Welcome to the joint, *${name}*.
 
-This is where words go to confess and guesses get put under the lamp. Every day there’s a new case — and nobody gets out clean.
+This is where our logic is stressed and guesses get put under the lamp. Every day there’s a new case — and nobody gets out clean.
 
 Here’s how it works, kid:
 • You crack the daily puzzle
