@@ -114,16 +114,16 @@ bot.on("message", async (msg) => {
     }
 
     if (/^\/help(@\w+)?$/i.test(text)) {
-      const helpText = `🕵️ *Clues by Sam Bot — Commands*
+  const helpText = `🕵️ *Clues by Sam Bot — Commands*
 
 *Daily Puzzle:*
 Just post your Clues by Sam result and I'll log it automatically.
 
 *Commands:*
-/clues_today — Today's leaderboard
-/clues_week — This week's leaderboard
-/clues_month — This month's leaderboard
-/clues_streak — Your current streak
+/clues\\_today — Today's leaderboard
+/clues\\_week — This week's leaderboard
+/clues\\_month — This month's leaderboard
+/clues\\_streak — Your current streak
 /scoring — How the scoring works
 /help — Show this message
 /ping — Check if the bot is alive
@@ -137,12 +137,12 @@ Just post your Clues by Sam result and I'll log it automatically.
 
 *The clock never stops. Neither should you.*`;
 
-      await bot.sendMessage(chatId, helpText, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-      });
-      return;
-    }
+  await bot.sendMessage(chatId, helpText, {
+    parse_mode: "Markdown", // This is why you need to escape
+    disable_web_page_preview: true
+  });
+  return;
+}
 
     if (/^\/scoring(@\w+)?$/i.test(text)) {
       const scoringText = `🎯 *Clues by Sam — Scoring System*
