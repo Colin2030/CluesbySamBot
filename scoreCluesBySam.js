@@ -43,7 +43,12 @@ function estimateSecondsFromBand(timeBandMinutes) {
  *  difficultyMultiplier: number,
  *  effectiveTimeSeconds: number|null,
  *  breakdown: {
- *    greens: number, clues: number, retries: number, tiles: number,
+ *    greens: number,
+ *    clues: number,
+ *    clueYellow: number,
+ *    clueOrange: number,
+ *    retries: number,
+ *    tiles: number,
  *    qualityRatio: number,
  *    speedCapSeconds: number,
  *    hasExactTime: boolean,
@@ -58,8 +63,9 @@ export function scoreCluesBySam(parsed) {
   const greens = parsed?.tiles?.green ?? 0;
   const clueYellow = parsed?.tiles?.clueYellow ?? 0;
   const clueOrange = parsed?.tiles?.clueOrange ?? 0;
+  const clues = clueYellow + clueOrange;
   const retries = parsed?.tiles?.retry ?? 0;
-  const tiles = parsed?.tiles?.total ?? (greens + clueYellow + clueOrange + retries);
+  const tiles = parsed?.tiles?.total ?? (greens + clues + retries);
 
   if (!Number.isFinite(tiles) || tiles <= 0) {
     return {
@@ -70,7 +76,12 @@ export function scoreCluesBySam(parsed) {
       difficultyMultiplier: difficultyMultiplier(parsed?.difficulty),
       effectiveTimeSeconds: null,
       breakdown: {
-        greens, clueYellow, clueOrange, retries, tiles: 0,
+        greens,
+        clues,
+        clueYellow,
+        clueOrange,
+        retries,
+        tiles: 0,
         qualityRatio: 0,
         speedCapSeconds: 20 * 60,
         hasExactTime: false,
@@ -81,8 +92,17 @@ export function scoreCluesBySam(parsed) {
   }
 
   // ---- Quality (0–100) ----
-  // weights: green 1.0, clueYellow 0.7, clueOrange 0.35 (double penalty), retry 0.4
-  const qualityRatioRaw = (1.0 * greens + 0.7 * clueYellow + 0.35 * clueOrange + 0.4 * retries) / tiles;
+  // weights:
+  //   green      1.0
+  //   clueYellow 0.7
+  //   clueOrange 0.35  (double penalty vs yellow)
+  //   retry      0.4
+  const qualityRatioRaw =
+    (1.0 * greens +
+      0.7 * clueYellow +
+      0.35 * clueOrange +
+      0.4 * retries) / tiles;
+
   const qualityRatio = clamp(qualityRatioRaw, 0, 1);
   const qualityScore = round(100 * qualityRatio);
 
@@ -135,6 +155,8 @@ export function scoreCluesBySam(parsed) {
     breakdown: {
       greens,
       clues,
+      clueYellow,
+      clueOrange,
       retries,
       tiles,
       qualityRatio,
