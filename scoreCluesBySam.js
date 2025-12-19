@@ -56,9 +56,10 @@ export function scoreCluesBySam(parsed) {
   const notes = [];
 
   const greens = parsed?.tiles?.green ?? 0;
-  const clues = parsed?.tiles?.clue ?? 0;
+  const clueYellow = parsed?.tiles?.clueYellow ?? 0;
+  const clueOrange = parsed?.tiles?.clueOrange ?? 0;
   const retries = parsed?.tiles?.retry ?? 0;
-  const tiles = parsed?.tiles?.total ?? (greens + clues + retries);
+  const tiles = parsed?.tiles?.total ?? (greens + clueYellow + clueOrange + retries);
 
   if (!Number.isFinite(tiles) || tiles <= 0) {
     return {
@@ -69,7 +70,7 @@ export function scoreCluesBySam(parsed) {
       difficultyMultiplier: difficultyMultiplier(parsed?.difficulty),
       effectiveTimeSeconds: null,
       breakdown: {
-        greens, clues, retries, tiles: 0,
+        greens, clueYellow, clueOrange, retries, tiles: 0,
         qualityRatio: 0,
         speedCapSeconds: 20 * 60,
         hasExactTime: false,
@@ -80,8 +81,8 @@ export function scoreCluesBySam(parsed) {
   }
 
   // ---- Quality (0–100) ----
-  // weights: green 1.0, clue 0.7, retry 0.4
-  const qualityRatioRaw = (1.0 * greens + 0.7 * clues + 0.4 * retries) / tiles;
+  // weights: green 1.0, clueYellow 0.7, clueOrange 0.35 (double penalty), retry 0.4
+  const qualityRatioRaw = (1.0 * greens + 0.7 * clueYellow + 0.35 * clueOrange + 0.4 * retries) / tiles;
   const qualityRatio = clamp(qualityRatioRaw, 0, 1);
   const qualityScore = round(100 * qualityRatio);
 
