@@ -47,8 +47,12 @@ function isEmojiGridLine(line) {
   const trimmed = line.trim();
   if (!trimmed) return false;
 
-  // Allowed tiles: 🟩 🟨 🟡 (and allow whitespace)
-  return /^[\s🟩🟨🟡]+$/.test(trimmed) && /[🟩🟨🟡]/.test(trimmed);
+  // Allowed tiles:
+  // 🟩 = correct
+  // 🟨 = mistake / retry
+  // 🟡 = single hint
+  // 🟠 = double hint
+  return /^[\s🟩🟨🟡🟠]+$/.test(trimmed) && /[🟩🟨🟡🟠]/.test(trimmed);
 }
 
 function countChars(str, char) {
@@ -69,7 +73,14 @@ function countChars(str, char) {
  *   timeSeconds: number | null,
  *   timeBandMinutes: number | null,
  *   grid: { rows: number, cols: number | null, lines: string[] },
- *   tiles: { green: number, clue: number, retry: number, total: number }
+ *   tiles: {
+ *     green: number,
+ *     clue: number,        // 🟡 + 🟠
+ *     retry: number,
+ *     total: number,
+ *     clueYellow: number,  // 🟡 only
+ *     clueOrange: number   // 🟠 only
+ *   }
  * }}
  */
 export function parseCluesBySamSubmission(text) {
@@ -86,11 +97,18 @@ export function parseCluesBySamSubmission(text) {
 
   // Typical first line:
   // "I solved the daily Clues by Sam, Nov 17th 2025 (Easy), in less than 10 minutes"
-  const headerLine = lines.find(l => /I solved the daily Clues by Sam/i.test(l)) ?? lines[0] ?? "";
+  const headerLine =
+    lines.find(l => /I solved the daily Clues by Sam/i.test(l)) ??
+    lines[0] ??
+    "";
 
   // Extract date
-  const dateMatch = headerLine.match(/,\s*([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{4})\s*/);
-  const puzzleDateISO = dateMatch ? parseHumanDateToISO(dateMatch[1]) : null;
+  const dateMatch = headerLine.match(
+    /,\s*([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{4})\s*/
+  );
+  const puzzleDateISO = dateMatch
+    ? parseHumanDateToISO(dateMatch[1])
+    : null;
   if (!puzzleDateISO) return null; // date is essential to scoring/streaks
 
   // Extract difficulty (first (...) after the date)
@@ -110,11 +128,18 @@ export function parseCluesBySamSubmission(text) {
   if (mmssMatch) {
     const mm = Number(mmssMatch[1]);
     const ss = Number(mmssMatch[2]);
-    if (Number.isFinite(mm) && Number.isFinite(ss) && ss >= 0 && ss <= 59) {
+    if (
+      Number.isFinite(mm) &&
+      Number.isFinite(ss) &&
+      ss >= 0 &&
+      ss <= 59
+    ) {
       timeSeconds = mm * 60 + ss;
     }
   } else {
-    const bandMatch = headerLine.match(/\bin\s+(?:less than|under)\s+(\d{1,2})\s+minutes?\b/i);
+    const bandMatch = headerLine.match(
+      /\bin\s+(?:less than|under)\s+(\d{1,2})\s+minutes?\b/i
+    );
     if (bandMatch) {
       const mins = Number(bandMatch[1]);
       if (Number.isFinite(mins) && mins > 0 && mins <= 99) {
@@ -131,7 +156,9 @@ export function parseCluesBySamSubmission(text) {
   const colCounts = gridLines.map(l => {
     // count only tiles, ignore whitespace
     const compact = l.replace(/\s+/g, "");
-    return [...compact].filter(ch => ch === "🟩" || ch === "🟨" || ch === "🟡").length;
+    return [...compact].filter(
+      ch => ch === "🟩" || ch === "🟨" || ch === "🟡" || ch === "🟠"
+    ).length;
   });
 
   const firstCols = colCounts[0] ?? null;
@@ -140,8 +167,10 @@ export function parseCluesBySamSubmission(text) {
   const allTiles = gridLines.join("").replace(/\s+/g, "");
 
   const green = countChars(allTiles, "🟩");
-  const clue = countChars(allTiles, "🟡");
   const retry = countChars(allTiles, "🟨");
+  const clueYellow = countChars(allTiles, "🟡");
+  const clueOrange = countChars(allTiles, "🟠");
+  const clue = clueYellow + clueOrange;
   const total = green + clue + retry;
 
   return {
@@ -155,6 +184,13 @@ export function parseCluesBySamSubmission(text) {
       cols,
       lines: gridLines,
     },
-    tiles: { green, clue, retry, total },
+    tiles: {
+      green,
+      clue,
+      retry,
+      total,
+      clueYellow,
+      clueOrange,
+    },
   };
 }
