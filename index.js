@@ -284,7 +284,7 @@ First confession stands. Changing it now would just make things worse.`
     `🧩 *Clues by Sam* — ${parsed.puzzleDateISO} (${parsed.difficulty ?? "?"})
 
 🏁 *Score:* ${scored.total}  •  *Today:* ${rankText}
-🟩 ${scored.breakdown.greens}  🟡 ${scored.breakdown.clues}  🟨 ${scored.breakdown.retries}   ⏱️ ${timeText}
+🟩 ${scored.breakdown.greens}  🟡 ${scored.breakdown.clueYellow}  🟠 ${scored.breakdown.clueOrange}  🟨 ${scored.breakdown.retries}   ⏱️ ${timeText}
 
 _${comment}_`,
     {
